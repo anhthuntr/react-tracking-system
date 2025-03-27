@@ -6,8 +6,8 @@ import { SubmitHandler, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useState } from "react"
-import { equipmentSchema } from "../utils/EquipmentValidate"
-import { Equipment } from "../interface/equipment"
+import { equipmentSchema } from "../../utils/EquipmentValidate"
+import { Equipment } from "../../interface/equipment"
 import { Button } from "@/components/ui/button"
 
 const EquipmentForm = () => {
