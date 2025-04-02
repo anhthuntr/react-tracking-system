@@ -10,7 +10,6 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  GlobalFilterTableState,
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -22,72 +21,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import EquipmentForm from "./EquipmentForm";
+import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Equipment } from "@/app/interface/equipment";
+import { equipmentData } from "@/app/api/data";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
-// const columns: ColumnDef<Equipment>[] = [
-//   {
-//     accessorKey: "name",
-//     header: ({ column }) => (
-//       <DataTableColumnHeader column={column} title={"Name"} />
-//     ),
-//   },
-//   {
-//     accessorKey: "location",
-//     header: ({ column }) => (
-//       <DataTableColumnHeader column={column} title={"Location"} />
-//     ),
-//   },
-//   {
-//     accessorKey: "department",
-//     header: ({ column }) => (
-//       <DataTableColumnHeader column={column} title={"Department"} />
-//     ),
-//   },
-//   {
-//     accessorKey: "model",
-//     header: ({ column }) => (
-//       <DataTableColumnHeader column={column} title={"Model"} />
-//     ),
-//   },
-//   {
-//     accessorKey: "serialNumber",
-//     header: ({ column }) => (
-//       <DataTableColumnHeader column={column} title={"Serial Number"} />
-//     ),
-//   },
-//   {
-//     accessorKey: "installDate",
-//     header: ({ column }) => (
-//       <DataTableColumnHeader column={column} title={"Install Date"} />
-//     ),
-//     cell: (props) => new Date(props.getValue() as string)?.toLocaleDateString(), //format date
-//   },
-//   {
-//     accessorKey: "status",
-//     header: ({ column }) => (
-//       <DataTableColumnHeader column={column} title={"Status"} />
-//     ),
-//     cell: (props) => (
-//       <span
-//         className={`px-2 py-1 rounded text-white ${
-//           props.getValue() === "Operational"
-//             ? "bg-green-500"
-//             : props.getValue() === "Down"
-//             ? "bg-red-500"
-//             : props.getValue() === "Maintenance"
-//             ? "bg-yellow-500"
-//             : "bg-gray-500"
-//         }`}
-//       >
-//         {props.getValue() as string}
-//       </span>
-//     ), //format status
-//   },
-// ];
 
 export function EquipmentTable<TData, TValue>({
   columns,
@@ -98,8 +55,10 @@ export function EquipmentTable<TData, TValue>({
     []
   );
   const [filtering, setFiltering] = React.useState("");
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [tableData, setTableData] = React.useState<Equipment[]>(equipmentData);
   const table = useReactTable({
-    data,
+    data: tableData as TData[],
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -108,77 +67,144 @@ export function EquipmentTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
     state: {
       sorting,
       columnFilters,
       globalFilter: filtering,
+      rowSelection,
     },
   });
+
+  const [open, setOpen] = useState(false);
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const updateStatus = (status: Equipment["status"]) => {
+    setTableData((prevData) =>
+      prevData.map((item) => {
+        const equipmentItem = item as Equipment;
+        return table
+          .getSelectedRowModel()
+          .rows.some(
+            (row) => (row.original as Equipment).id === equipmentItem.id
+          )
+          ? { ...equipmentItem, status }
+          : equipmentItem;
+      })
+    );
+    setRowSelection({}); // reset selection
+  };
+  const STATUS_OPTIONS: Equipment["status"][] = [
+    "Operational",
+    "Down",
+    "Maintenance",
+    "Retired",
+  ];
+  //console.log(Object.values(table.getSelectedRowModel().rowsById).map(item => item.original))
   return (
-    <div className="w-full max-w-6xl mx-auto p-4">
-    <div className="flex items-center mb-4">
-      <Input
-        type="text"
-        placeholder="Filter by Name, Location, Model,..."
-        value={filtering}
-        onChange={(e) => setFiltering(e.target.value)}
-        className="w-full max-w-md px-4 py-2 border rounded-lg"
-      />
-    </div>
-
-    <div className="flex items-center">
-      <div className="rounded-md border">
-        <Table>
-          {/* Table Header */}
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-
-          {/* Table Body */}
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
+    <div className="w-full mx-auto p-4">
+      <div className="flex items-center mb-4">
+        <Input
+          type="text"
+          placeholder="Filter by Name, Location, Model,..."
+          value={filtering}
+          onChange={(e) => setFiltering(e.target.value)}
+          className="w-full max-w-md px-4 py-2 border rounded-lg"
+        />
+        <Button onClick={() => setOpen(true)} size="icon" className="ml-3">
+          <Plus />
+        </Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add new equipment</DialogTitle>{" "}
+            </DialogHeader>
+            <EquipmentForm onClose={handleClose} />
+          </DialogContent>
+        </Dialog>
+        <div className="ml-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">Update Status</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {STATUS_OPTIONS.map((status) => (
+                <DropdownMenuItem
+                  key={status}
+                  onClick={() => updateStatus(status)}
                 >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                  {" "}
+                  {status}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <div className="flex items-center">
+        <div className="rounded-md border">
+          <Table>
+            {/* Table Header */}
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead
+                        key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+
+            {/* Table Body */}
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+      <div className="flex-1 text-sm text-muted-foreground py-2">
+        {table.getFilteredSelectedRowModel().rows.length} of{" "}
+        {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
     </div>
-  </div>
-  )
+  );
 }

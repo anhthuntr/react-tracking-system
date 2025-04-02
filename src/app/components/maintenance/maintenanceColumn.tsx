@@ -1,9 +1,10 @@
 /* eslint-disable react/react-in-jsx-scope */
 'use client'
 
-import { MaintenanceRecord } from "../../interface/maintenanceRecord";
+import { MaintenanceRecord } from "@/app/interface/maintenanceRecord";
 import { ColumnDef } from "@tanstack/react-table"
-import { DataTableColumnHeader } from "../../utils/columnHeader";
+import { DataTableColumnHeader } from "@/app/utils/columnHeader";
+import { getEquipmentName } from "@/app/api/getEquipment";
 
 export const maintenanceColumns: ColumnDef<MaintenanceRecord>[] = [
     {
@@ -11,6 +12,22 @@ export const maintenanceColumns: ColumnDef<MaintenanceRecord>[] = [
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={"Equipment ID"} />
       ),
+    },
+    {
+      accessorKey: 'equipmentName',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={"Equipment Name"} />
+      ),
+      cell: ({ row }) => {
+        const equipmentId = row.getValue('equipmentId');
+        return getEquipmentName(equipmentId as string);
+      },
+      enableSorting: true,
+      sortingFn: (rowA, rowB) => {
+        const nameA = getEquipmentName(rowA.original.equipmentId);
+        const nameB = getEquipmentName(rowB.original.equipmentId);
+        return nameA.localeCompare(nameB);
+      },
     },
     {
       accessorKey: 'date',

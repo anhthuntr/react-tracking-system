@@ -8,9 +8,15 @@ export const maintenanceSchema = z.object({
     ),
     type: z.enum(['Preventive','Repair','Emergency']),
     technician: z.string().min(2, 'Minimum 2 characters'),
-    hoursSpent: z.number().min(0).max(24, 'Hours must be from 0 to 24'),
+    hoursSpent: z.preprocess(
+        (arg) => (typeof arg === "string" ? parseFloat(arg): arg),
+        z.number().min(0).max(24, 'Hours must be from 0 to 24'),
+    ),
     description: z.string().min(10, 'Minimum 10 characters'),
-    partsReplaced: z.array(z.string()).optional(),
+    partsReplaced: z.preprocess(
+        (arg) => (typeof (arg) === "string" ? [arg]: arg),
+        z.array(z.string()).optional(),
+    ),
     priority: z.enum(['Low','Medium','High']),
     completionStatus: z.enum(['Complete','Incomplete','Pending Parts'])
 })
